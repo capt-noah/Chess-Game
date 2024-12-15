@@ -1,0 +1,1 @@
+// the queen can jump a peice when moving diagonally and when moving straight upward
