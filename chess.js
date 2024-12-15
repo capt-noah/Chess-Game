@@ -203,7 +203,18 @@ window.onload = function gameStart(){
                         addToGrave(t);
                         // t.children[0].remove();
 
-                    }    
+                    }
+                    
+                    if( p.id[1] == "w" && p.id[2] == "1"){ 
+                        let col = p.id[4];
+                        p.src = "./Assets/Chess Pieces/queen_white.png";
+                        p.id = "qw1-" + col;
+                    }
+                    else if( p.id[1] == "b" && p.id[2] == "8"){
+                        let col = p.id[4];
+                        p.src = "./Assets/Chess Pieces/queen_black.png";
+                        p.id = "qb8-" + col;
+                    }
                
                     if( p.id[1] == "w"){
                         player = 2;
