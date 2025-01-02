@@ -1,12 +1,17 @@
 const board = document.getElementById("board");
 const graveWhite = document.getElementById("graveWhite");
 const graveBlack = document.getElementById("graveBlack");
+const moveSelfSound = document.getElementById("moveSelf");
+const moveOpponentSound = document.getElementById("moveOpponent");
+const captureSound = document.getElementById("capture");
+const player1 = document.getElementById("player1");
+const player2 = document.getElementById("player2");
+const grave1 = document.getElementById("grave1");
+const grave2 = document.getElementById("grave2");
 let chessPieces = ["rook_white","knight_white","bishop_white","king_white","queen_white","bishop_white","knight_white","rook_white",
                     "rook_black","knight_black","bishop_black","king_black","queen_black","bishop_black","knight_black","rook_black",]
-let graveWhiteStack = [];
-let graveBlackStack = [];
-let player = 1;
-let peice;
+
+
 let peiceMap = new Map();
 peiceMap.set("rook_white", "rw");
 peiceMap.set("knight_white", "kw");
@@ -20,21 +25,19 @@ peiceMap.set("bishop_black", "bb");
 peiceMap.set("king_black", "Kb");
 peiceMap.set("queen_black", "qb");
 
-let whatPeice = new Map();
-whatPeice.set('r', "rook");
-whatPeice.set('k', "knight");
-whatPeice.set('b', "bishop");
-whatPeice.set('K', "king");
-whatPeice.set('q', "queen");
-whatPeice.set('p', "pawn");
-
-let whatColor = new Map();
-whatPeice.set('w', "white");
-whatPeice.set('b', "black");
-
+let player = 1;
+let selectedPeice;
+let killedPeice;
 let currentTile;
+let currentPeice;
+let targetTile;
 let c;
+let isPromotable = false;
 let selected = [];
+let markedTiles = [];
+let isPeiceSelected;
+let availableTiles = [];
+let isValid = new Map();
 
 let pawnFirstMove = new Map();
 for( let i = 1; i <= 2; i++){
@@ -49,7 +52,11 @@ for( let i = 1; i <= 2; i++){
     }
 }
 
-window.onload = function gameStart(){
+window.onload = () => {
+    gameStart();
+}
+
+function gameStart(){
     let j = 1;
     
     for( let i = 1; i <= 8; i++){
@@ -61,20 +68,19 @@ window.onload = function gameStart(){
             tileContainer.id = "tc" + i + "-" + j;
 
             if(i % 2 == 0){
-                color = j % 2 ? "white" : "gray";
+                color = j % 2 ? "white" : "rgb(149, 149, 149)";
             }
             else{
-                color = j % 2 ? "gray" : "white";
+                color = j % 2 ? "rgb(149, 149, 149)" : "white";
             }
 
             tileContainer.style.backgroundColor = color;
             const t = document.createElement("div");
             t.classList = "chessTile";
             t.id = "t" + i + "-" + j;
-            t.onclick = () => handler(t);
 
             if( !(i >= 3) || !(i <= 6)){
-                let str = "./Assets/Chess Pieces/";
+                let str = "./Assets/Chess Peices1/";
                 const img = document.createElement("img");
                 img.classList.add("peices");
                 img.width = 60;
@@ -98,534 +104,456 @@ window.onload = function gameStart(){
 
                     img.id = peice + i + "-" + j;
 
-                    
+                    img.onclick = (event) => {
+                        handler(event, img);
+                    };
                     t.append(img); 
             }
 
             tileContainer.append(t);
             board.append(tileContainer);
             
-            
         }
-        
-
     }
 
-    makeGrave();
+    let gameArray = [
+        ["rb", "kb", "bb", "qb", "Kb", "bb", "kb", "rb"],
+        ["pb", "pb", "pb", "pb", "pb", "pb", "pb", "pb"],
+        ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
+        ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
+        ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
+        ["  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "],
+        ["pw", "pw", "pw", "pw", "pw", "pw", "pw", "pw"],
+        ["rw", "kw", "bw", "qw", "Kw", "bw", "kw", "rw"]
+    ];
 
+    // console.log(gameArray);
+    // updateGame(gameArray);
+ 
+}
 
+function addToGrave(killedPeice, color){
+    killedPeice.width = 20;
+    killedPeice.height = 20;
+    if(color == "w")
+        grave2.append(killedPeice);
+    else
+        grave1.append(killedPeice);
+
+}
+
+function tileHandler(e){
+    if( e.tagName == "IMG"){
+        if(isValid.get(e.parentElement.id)){
+            availableTiles.push(currentPeice.parentElement);
+            availableTiles.forEach(removeHighlight);
+            e.parentElement.append(currentPeice);
+
+            updateId(currentPeice, e.parentElement);
+            addToGrave(e, e.id[1]);
+            if(isPromotable){
+                currentPeice = promote(currentPeice);
+                isPromotable = false;
+            }
+            board.removeEventListener('click', tileHandler);
+            isPeiceSelected = false;
+            captureSound.play();
+
+            changePlayer();
+            return;
+        }
+        return;
+    }
     
-};
+    if(isValid.get(e.target.id)){    
+        availableTiles.push(currentPeice.parentElement);
+        availableTiles.forEach(removeHighlight);
+        e.target.append(currentPeice);
 
-    function makeGrave(){
-        for( let i = 1; i <= 16; i++){
-            let graveTileBlack = document.createElement("div");
-            let graveTileWhite = document.createElement("div");
-
-            graveTileWhite.classList = "graveWhiteTile";
-            graveTileBlack.classList = "graveBlackTile";
-
-            graveTileBlack.id = "gtb-" + i;
-            graveTileWhite.id = "gtw-" + i;
-
-            graveWhite.append(graveTileWhite);
-            graveBlack.append(graveTileBlack);
-
-            graveWhiteStack.push(i);
-            graveBlackStack.push(i);
-        }
-    }
-    function addToGrave(t){
-        if( t.children[0].id[1] == "w"){
-            let gtw = document.getElementById("gtw-" + graveWhiteStack.pop());
-            gtw.append(t.children[0]);
-        }
-        else{
-            let gtb = document.getElementById("gtb-" + graveBlackStack.pop());
-            gtb.append(t.children[0]);
-        }
-    }
-
-    function handler(t){
-        let pr, pc, tr, tc;
-        currentTile = t;
-
-        selected.push(currentTile.id);
-        if( !currentTile.children[0]){
-            if( selected.length < 2){
-                selected.pop();
-                return;
-            }
-
-        }  
-        else{
-            if( (selected.length < 2 && currentTile.children[0].id[1] == "b" && player == 1) || (selected.length < 2 && currentTile.children[0].id[1] == "w" && player == 2)){
-                selected.pop();
-                return;
-            }
-        }
-
-            if( selected.length < 2){
-
-                let color = currentTile.style.backgroundColor;
-                if( color == "green"){
-                    currentTile.style.backgroundColor = ""
-                }
-                else{
-                    // currentTile.style.backgroundColor = "rgba(16, 124, 16, 0.3)";
-                    currentTile.style.backgroundColor = "green";
-                }
-                
-            }
-
-            else if( selected.length == 2){
-                
-                let p = (document.getElementById(selected[0])).children[0];
-                let t = document.getElementById(selected[1]);
-                let isValid, canOvertake = false;
-
-                if( !t.children[0]){
-                    isValid = isValidMove(p, t);
-                }
-                else if(t.children[0].id[1] != p.id[1]){
-                    isValid = isValidMove(p, t);
-                    canOvertake = true;
-                }
-                else{
-                    isValid = false;
-                }
-
-                if( isValid){
-                    p = updateId(p, t);
-
-                    if( canOvertake){
-                        console.log(t.children[0].id);
-                        addToGrave(t);
-                        // t.children[0].remove();
-
-                    }
-                    
-                    if( p.id[1] == "w" && p.id[2] == "1"){ 
-                        let col = p.id[4];
-                        p.src = "./Assets/Chess Pieces/queen_white.png";
-                        p.id = "qw1-" + col;
-                    }
-                    else if( p.id[1] == "b" && p.id[2] == "8"){
-                        let col = p.id[4];
-                        p.src = "./Assets/Chess Pieces/queen_black.png";
-                        p.id = "qb8-" + col;
-                    }
-               
-                    if( p.id[1] == "w"){
-                        player = 2;
-                        let p1 = document.getElementById("p1");
-                        let p2 = document.getElementById("p2");
-                        p2.style.backgroundColor = "";
-                        p2.style.backgroundColor = "rgb(11, 173, 100)";
-                        p2.style.color = "";
-                        p2.style.color = "white";
-
-                        p1.style.backgroundColor = "";
-                        p1.style.backgroundColor = "white";
-                        p1.style.color = "";
-                        p1.style.color = "black";
-                        
-                        
-                        board.classList.remove("rotate0");
-                        board.classList.add("rotate180");
-
-                        let peices = document.querySelectorAll(".peices");
-                        peices.forEach(peices => peices.classList.remove("rotate180", "rotate0"));
-                        peices.forEach(peices => peices.classList.add("rotate180"));
-
-                    }
-                    else{
-                        player = 1;
-                        let p1 = document.getElementById("p1");
-                        let p2 = document.getElementById("p2");
-                        p1.style.backgroundColor = "";
-                        p1.style.backgroundColor = "rgb(11, 173, 100)";
-                        p1.style.color = "";
-                        p1.style.color = "white";
-
-                        p2.style.backgroundColor = "";
-                        p2.style.backgroundColor = "gray";
-                        p2.style.color = "";
-                        p2.style.color = "white";
-
-                        board.classList.remove("rotate180");
-                        board.classList.add("rotate0");
-
-                        let peices = document.querySelectorAll(".peices");
-                        peices.forEach(peices => peices.classList.remove("rotate180", "rotate0"));
-                        peices.forEach(peices => peices.classList.add("rotate0"));
-                    }
-                    t.append(p);
-
-                } 
-               
-
-                const t1 = document.getElementById(selected[0]);
-                t1.style.backgroundColor = "";
-                const t2 = document.getElementById(selected[1]);
-                t2.style.backgroundColor = "";
-
-                selected.length = 0;
-            }
-
-            else if( selected.length == 3 && selected[1] == selected[2]){
-                currentTile.style.backgroundColor = "";
-                selected.length = 1;
-            }
+        updateId(currentPeice, e.target);
         
-        
-            else{
-                const t1 = document.getElementById(selected[0]);
-                t1.style.backgroundColor = "";
-                const t2 = document.getElementById(selected[1]);
-                t2.style.backgroundColor = "";
-
-                selected.length = 0;
-            }
-        
-
-    }
-
-    // function availableMoves(t){
-       
-    //         let id = t.id;
-    //         let c1 = Number(id[1]);
-    //         let c2 = Number(id[3]);
-
-    //     if(pawnFirstMove.get(t.children[0].id)){
-    //         c1++;
-    //         const t1 = document.getElementById("t" + c1 + "-" + c2);
-    //         c1++;
-    //         const t2 = document.getElementById("t" + c1 + "-" + c2);
-
-    //         t1.style.backgroundColor = "rgba(14, 226, 145, 0.5)";
-    //         t2.style.backgroundColor = "rgba(14, 226, 145, 0.5)";
+        board.removeEventListener('click', tileHandler);
+        isPeiceSelected = false;
+        if(currentPeice.id[1] == "w")
+            moveSelfSound.play();
+        else
+            moveOpponentSound.play();
             
-    //     }
-    // }
+            changePlayer();
+    }
+}
 
-    function updateId( p, t){
+function handler(event, img){
+    event.stopPropagation();
+
+    if(isPeiceSelected && img.id[1] == currentPeice.id[1]){ 
+        isPeiceSelected = false;
+        availableTiles.push(currentPeice.parentElement);
+        availableTiles.forEach(removeHighlight);
+        board.removeEventListener('click', tileHandler);
+        return;
+    }
+
+    if(isPeiceSelected && img.id[1] != currentPeice.id[1]){ 
+
+        board.addEventListener('click', tileHandler(img));
+        return;
+    }
+
+    if(!isPeiceSelected){ 
+        currentPeice = img;
+        currentTile = currentPeice.parentElement;
+        if((player == 1 && currentPeice.id[1] == "b") || (player == 2 && currentPeice.id[1] == "w")){
+            return;
+        }
+        if (currentTile.style.borderColor == "rgb(0, 255, 229)"){
+            currentTile.style.borderColor = "";
+            isPeiceSelected = false;
+            availableTiles.forEach(addHighlight);
+        }
+        else{
+            currentTile.style.borderColor = "rgb(0, 255, 229)";
+            isPeiceSelected = true;
+        }
+
+        availableTiles = availableMoves(currentPeice);
+        availableTiles.forEach(addHighlight);
+
+        board.addEventListener('click', tileHandler);
+
+        return;
+    }
+    
+}
+
+function changePlayer(){
+    if( player == 1){
+        player = 2;
+        player1.style.borderColor = "";
+        player2.style.borderColor = "rgb(0, 167, 72)";
+
+    }
+    else{
+        player = 1;
+        player2.style.borderColor = "";
+        player1.style.borderColor = "rgb(0, 167, 72)";
+    }
+}
+
+function updateId( p, t){
         let idInitials = p.id[0] + p.id[1];
         p.id = "";
         p.id = idInitials + t.id[1] + "-" + t.id[3];
         return p;
-    }
+}
 
-    function isValidMove(p, t){
-        pr = Number(p.id[2]); // 1
-        pc = Number(p.id[4]); // 1
-        tr = Number(t.id[1]); // 6
-        tc = Number(t.id[3]); // 1
+function availableMoves(currentPeice){
+    let r = Number(currentPeice.id[2]);
+    let c = Number(currentPeice.id[4])
+    let id = currentPeice.id;
+    let left, right, up, down;
+    let counter = 1;
+    availableTiles = [];
+    isValid.clear();
 
-        switch(p.id[0]){
-            case "p":
-                if(p.id[1] == 'b'){
-                    let currentTile = document.getElementById("t" + tr + "-" + tc);
-                    let isFirst = isFirstMove(p.id);
-                    if( (isFirst && tr == pr + 2 && tc == pc) || (tr == pr + 1  && tc == pc) || (tr == pr + 1 && tc == pc + 1) || (tr == pr + 1 && tc == pc - 1)){
-                        if(isFirst && tc == pc){
-                            return canMove(p.id[0], pr, pc, tr, tc);
-                        }
-                        else if((tr == pr + 1 && tc == pc + 1) || (tr == pr + 1 && tc == pc - 1)){
-                            if(!currentTile.children[0]){
-                                return false;
-                            }
-                            else{
-                                if( currentTile.children[0].id[1] == "w"){
-                                    return true;
-                                }
-                                else{
-                                    return false;
-                                }
-                            }
-                        }
-                        else{
-                            
-                            if( !currentTile.children[0]){
-                                return true;
-                            }
-                            else if( currentTile.children[0].id[1] == "w"){
-                                return true;
-                            }
-                            else{
-                                return false;
-                            }
-                        }
-                        
-                    }
-                    else{
-                        return false;
-                    }
+    switch(currentPeice.id[0]){
+
+        case "p":
+
+            if( isFirstMove(id)){
+                let checkTile1 = id[1] == "w" ? document.getElementById("t" + (r - 1) + "-" + c) : document.getElementById("t" + (r + 1) + "-" + c);
+                let checkTile2 = id[1] == "w" ? document.getElementById("t" + (r - 2) + "-" + c) : document.getElementById("t" + (r + 2) + "-" + c);
+
+                if (checkTile1.children[0] == undefined && checkTile2.children[0] == undefined){
+                    availableTiles.push(checkTile1);
+                    availableTiles.push(checkTile2);
+                    isValid.set(checkTile1.id, 1);
+                    isValid.set(checkTile2.id, 1);
                 }
 
-
-                else{
-                    let currentTile = document.getElementById("t" + tr + "-" + tc)
-                    let isFirst = isFirstMove(p.id);
-                    if( (isFirst && tr == pr - 2 && tc == pc) || (tr == pr - 1  && tc == pc) || (tr == pr - 1 && tc == pc - 1) || (tr == pr - 1 && tc == pc + 1)){
-                        if( isFirst && tc == pc){
-                            return canMove(p.id[0], pr, pc, tr, tc);
-                        }
-                        else if((tr == pr - 1 && tc == pc - 1) || (tr == pr - 1 && tc == pc + 1)){
-                            if(!currentTile.children[0]){
-                                return false;
-                            }
-                            else{
-                                if( currentTile.children[0].id[1] == "b"){
-                                    return true;
-                                }
-                                else{
-                                    return false;
-                                }
-                            }
-                        }
-                        else{
-                            
-                            if( !currentTile.children[0]){
-                                return true;
-                            }
-                            else if( currentTile.children[0].id[1] == "b"){
-                                return true;
-                            }
-                            else{
-                                return false;
-                            }
-                        }
-                    }
-                    else{
-                        return false;
-                    }
+                else if(checkTile1.children[0] == undefined && checkTile2.children[0] != undefined){
+         
+                    availableTiles.push(checkTile1);
+                    isValid.set(checkTile1.id, 1);
                 }
 
-                break;
-            case "r":              
-                if( pc == tc || pr == tr){
-                    return canMove(p.id[0], pr, pc, tr, tc);
-                }
-                else{
-                    return false;
-                }
-                break;
-            case "k":             
-                if( tc == pc + 1 || tc == pc - 1 || pr == tr + 1 || pr == tr - 1 ){  
-                    return canMove(p.id[0], pr, pc, tr, tc);
-                }
-                else{
-                    return false;
-                }
-                break;
-            case "b":            
-                 // x1 + y1 == x2 + y2 || x1 - y1 == x2 - y2 
-                if( pr + pc == tr + tc || pr - pc == tr - tc){
-                    return canMove(p.id[0], pr, pc, tr, tc)
-                }
-                else{
-                    return false;
-                }
-
-                break;
-            case "K":
-                if( (pr == tr && (tc == pc + 1 || tc == pc - 1) ) || (pc == tc && ( tr == pr + 1 || tr == pr - 1)) || (tr == pr - 1 && tc == pc - 1) || (tr == pr - 1 && tc == pc + 1) || ( tr == pr + 1 && tc == pc - 1) || (tr == pr + 1 && tc == pc + 1) ){
-                    console.log("valid");
-                    return true;
-                }
-                else{
-                    console.log("not valid");
-                    return false;
-                }
-                break;
-            case "q":
+            }
+            else{
                 
-                if((pr + pc == tr + tc || pr - pc == tr - tc) || (pc == tc || pr == tr)) {            
-                    if(canMove("r", pr, pc, tr, tc) || canMove("b", pr, pc, tr, tc)){
-                        return true;
+                let checkTile1 = id[1] == "w" ? document.getElementById("t" + (r - 1) + "-" + c) : document.getElementById("t" + (r + 1) + "-" + c);
+
+                if(checkTile1.firstChild != undefined){
+                    let checkTile2 = id[1] == "w" ? document.getElementById("t" + (r - 1) + "-" + (c + 1)) : document.getElementById("t" + (r + 1) + "-" + (c + 1));
+                    let checkTile3 = id[1] == "w" ? document.getElementById("t" + (r - 1) + "-" + (c - 1)) : document.getElementById("t" + (r + 1) + "-" + (c - 1));
+                    if(checkTile2 && id[1] != checkTile2.firstChild.id[1]){
+                        availableTiles.push(checkTile2);
+                        isValid.set(checkTile2.id, 1);
+                    }
+                    if(checkTile3 && id[1] != checkTile3.firstChild.id[1]){
+                        availableTiles.push(checkTile3);
+                        isValid.set(checkTile3.id, 1);
+                    }
+                }
+
+                if(checkTile1.firstChild == undefined){    
+                    availableTiles.push(checkTile1);
+                    isValid.set(checkTile1.id, 1);
+                }
+
+                let checkTile2 = id[1] == "w" ? document.getElementById("t" + (r - 1) + "-" + (c + 1)) : document.getElementById("t" + (r + 1) + "-" + (c + 1));
+                let checkTile3 = id[1] == "w" ? document.getElementById("t" + (r - 1) + "-" + (c - 1)) : document.getElementById("t" + (r + 1) + "-" + (c - 1));
+
+                    if(checkTile2)
+                        if(checkTile2.firstChild != undefined)
+                            if( id[1] != checkTile2.firstChild.id[1]){
+                                if((id[1] == "w" && checkTile2.firstChild.id[2] == 1) || (id[1] == "b" && checkTile2.firstChild.id[2] == 8))
+                                    isPromotable = true;
+                                else
+                                    isPromotable = false;
+                                availableTiles.push(checkTile2);
+                                isValid.set(checkTile2.id, 1);
+                            }
+                    if(checkTile3)
+                        if(checkTile3.firstChild != undefined)
+                            if(id[1] != checkTile3.firstChild.id[1]){
+                                if((id[1] == "w" && checkTile3.firstChild.id[2] == 1) || (id[1] == "b" && checkTile3.firstChild.id[2] == 8))
+                                    isPromotable = true;
+                                else
+                                    isPromotable = false;
+                                availableTiles.push(checkTile3);
+                                isValid.set(checkTile3.id, 1);
+                            }
+
+            }  
+            break;
+        
+        case "k":
+
+            let checkTile1 = id[1] == "w" ? document.getElementById("t" + (r - 2) + "-" + (c + 1)) : document.getElementById("t" + (r + 2) + "-" + (c + 1));
+            let checkTile2 = id[1] == "w" ? document.getElementById("t" + (r - 2) + "-" + (c - 1)) : document.getElementById("t" + (r + 2) + "-" + (c - 1));
+            let checkTile3 = id[1] == "w" ? document.getElementById("t" + (r - 1) + "-" + (c + 2)) : document.getElementById("t" + (r + 1) + "-" + (c - 2));
+            let checkTile4 = id[1] == "w" ? document.getElementById("t" + (r + 1) + "-" + (c + 2)) : document.getElementById("t" + (r - 1) + "-" + (c - 2));
+            let checkTile5 = id[1] == "w" ? document.getElementById("t" + (r + 1) + "-" + (c - 2)) : document.getElementById("t" + (r - 1) + "-" + (c + 2));
+            let checkTile6 = id[1] == "w" ? document.getElementById("t" + (r - 1) + "-" + (c - 2)) : document.getElementById("t" + (r + 1) + "-" + (c + 2));
+            let checkTile7 = id[1] == "w" ? document.getElementById("t" + (r + 2) + "-" + (c + 1)) : document.getElementById("t" + (r - 2) + "-" + (c - 1));
+            let checkTile8 = id[1] == "w" ? document.getElementById("t" + (r + 2) + "-" + (c - 1)) : document.getElementById("t" + (r - 2) + "-" + (c + 1));
+
+            let arr = [checkTile1, checkTile2, checkTile3, checkTile4, checkTile5, checkTile6, checkTile7, checkTile8]
+            let listOfTiles = [];
+            
+            arr.forEach((tile) =>{
+                if( tile){
+                    if(tile.firstChild != undefined) { 
+                        if( id[1] != tile.firstChild.id[1])
+                            listOfTiles.push(tile);
+                    }
+                    else
+                        listOfTiles.push(tile);
+                }
+            });
+
+            listOfTiles.forEach(pushAdd);
+            break;
+
+        case "r":
+
+            let left = document.getElementById("t" + r + "-" + (c - counter)); 
+            let right = document.getElementById("t" + r + "-" + (c + counter)); 
+            let up = document.getElementById("t" + (r - counter) + "-" + c); 
+            let down = document.getElementById("t" + (r + counter) + "-" + c); 
+
+            let arrayOfTiles = [left, right, up, down];
+
+            arrayOfTiles.forEach((tile) =>{              
+                counter = 1;
+                let index = arrayOfTiles.indexOf(tile);
+                if(tile){
+                    do{
+                        if(tile.firstChild){
+                            if((player == 1 && tile.firstChild.id[1] == "b") || (player == 2 && tile.firstChild.id[1] == "w")){
+                                availableTiles.push(tile);
+                                isValid.set(tile.id, 1);
+                            }
+                            break;
+                        }
+                        availableTiles.push(tile);
+                        isValid.set(tile.id, 1);
+                        counter++;
+                            if(index == 0)
+                                tile = document.getElementById("t" + r + "-" + (c - counter)); 
+                            else if(index == 1)
+                                tile = document.getElementById("t" + r + "-" + (c + counter)); 
+                            else if(index == 2)
+                                tile = document.getElementById("t" + (r - counter) + "-" + c); 
+                            else
+                                tile = document.getElementById("t" + (r + counter) + "-" + c); 
+                    }
+                    while(tile);
+                }
+            });
+            
+            break;
+
+        case "b":
+            counter = 1;
+            let up_left = document.getElementById("t" + (r - counter) + "-" + (c - counter));
+            let up_right = document.getElementById("t" + (r - counter) + "-" + (c + counter));
+            let down_left = document.getElementById("t" + (r + counter) + "-" + (c - counter));
+            let down_right = document.getElementById("t" + (r + counter) + "-" + (c + counter));
+
+            let list = [up_left, up_right, down_left, down_right];
+
+            list.forEach((tile) => {
+                counter = 1;
+                let index = list.indexOf(tile);
+                if(tile){
+                    do{
+                        if(tile.firstChild){
+                            if((player == 1 && tile.firstChild.id[1] == "b") || (player == 2 && tile.firstChild.id[1] == "w")){
+                                availableTiles.push(tile);
+                                isValid.set(tile.id, 1);
+                            }
+                            break;
+                        }
+                        availableTiles.push(tile);
+                        isValid.set(tile.id, 1);
+                        counter++;
+
+                        if( index == 0){
+                            tile = document.getElementById("t" + (r - counter) + "-" + (c - counter));
+                        }
+                        else if( index == 1){
+                            tile = document.getElementById("t" + (r - counter) + "-" + (c + counter));
+                        }
+                        else if( index == 2){
+                            tile = document.getElementById("t" + (r + counter) + "-" + (c - counter));
+                        }
+                        else{
+                            tile = document.getElementById("t" + (r + counter) + "-" + (c + counter));
+                        }
+                    }
+                    while(tile);
+                }
+            });
+
+            break;
+
+        case "K":
+            counter = 1;
+            let UP = document.getElementById("t" + (r - counter) + "-" + c);
+            let DOWN = document.getElementById("t" + (r + counter) + "-" + c);
+            let LEFT = document.getElementById("t" + r + "-" + (c - counter));
+            let RIGHT = document.getElementById("t" + r + "-" + (c + counter));
+
+            let UP_LEFT = document.getElementById("t" + (r - counter) + "-" + (c - counter));
+            let UP_RIGHT = document.getElementById("t" + (r - counter) + "-" + (c + counter));
+            let DOWN_LEFT = document.getElementById("t" + (r + counter) + "-" + (c - counter));
+            let DOWN_RIGHT = document.getElementById("t" + (r + counter) + "-" + (c + counter));
+
+            let listForKing = [UP, DOWN, LEFT, RIGHT, UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT];
+
+            listForKing.forEach((tile) => {
+                if(tile){
+
+                    if(tile.firstChild){
+                        if((player == 1 && tile.firstChild.id[1] == "b") || (player == 2 && tile.firstChild.id[1] == "w")){
+                            availableTiles.push(tile);
+                            isValid.set(tile.id, 1);
+                        }                 
                     }
                     else{
-                        return false;
+                        availableTiles.push(tile);
+                        isValid.set(tile.id, 1);
                     }
                 }
-                else{
-                    return false;
-                }
-                break;
-            default:
-                break;
-        }
-        
-    }
+                
+            });
+            break;
 
-    function isFirstMove(id){
+        case "q":
+            console.log("Queen");
+            return queenMovement(currentPeice);
+            break;
+    
+    }
+    return availableTiles;
+}
+
+function queenMovement(currentPeice){
+
+    let tilesForQueen = [];
+    currentPeice.id = currentPeice.id.replace("q", "r");
+
+    tilesForQueen.push(availableMoves(currentPeice));
+    let valid1 = new Map(isValid);
+    currentPeice.id = currentPeice.id.replace("r", "b");
+
+    tilesForQueen.push(availableMoves(currentPeice));
+    let valid2 = new Map(isValid);
+    currentPeice.id = currentPeice.id.replace("b", "q");
+
+    availableTiles = tilesForQueen.flat(Infinity);
+    availableTiles.forEach(addHighlight);
+
+    isValid = new Map(valid1);
+    valid2.forEach((value, key) => {
+        isValid.set(key, value);
+    });
+
+    return availableTiles;
+}
+
+function promote(currentPeice){
+
+    if( currentPeice.id[1] == "w"){
+        let str = currentPeice.id;
+        str = str.replace("p", "q");
+        currentPeice.id = str;
+        currentPeice.src = "./Assets/Chess Peices1/queen_white.png";
+    }
+    else{
+        let str = currentPeice.id;
+        str = str.replace("p", "q");
+        currentPeice.id = str;
+        currentPeice.src = "./Assets/Chess Peices1/queen_black.png";
+
+    }
+    return currentPeice;
+}
+
+function pushAdd(tile){
+    if( tile && tile.id){
+        availableTiles.push(tile);
+        isValid.set(tile.id, 1);
+    }
+}
+
+function addHighlight(tile){
+    if(isPeiceSelected){
+        if(tile.firstChild){
+            if( currentPeice.id[1] != tile.firstChild.id[1])
+                tile.style.borderColor = "rgb(255, 0, 55)";
+            else
+                tile.style.borderColor = "rgb(0, 255, 229)";
+        }
+        else
+        tile.style.borderColor = "rgb(0, 255, 229)";
+
+    }
+    else{
+        tile.style.borderColor = "";
+    }
+}
+
+function removeHighlight(tile){
+    tile.style.borderColor = "";
+}
+
+function isFirstMove(id){
         if( pawnFirstMove.get(id) == 1){
-            pawnFirstMove.set(id, 0);
             return true;
         }
         else{
             return false;
         }
-    }
-
-    function canMove(id, prow, pcol, trow, tcol){
-        switch(id){
-            case "r":
-                let isTrue = false;
-                // Up and down
-                if( pcol == tcol){
-                    // +
-                    if(prow < trow){
-                        let op = 1;
-                        return isOk(prow, trow, pcol, tcol, isTrue, op);
-                    }
-                    // -
-                    else{
-                        let op = 0;
-                        return isOk(prow, trow, pcol, tcol, isTrue, op);
-
-                    }
-                }
-                // Right and left
-                else{
-                    // +
-                    if( pcol < tcol) {   
-                        let op = 1;
-                        return isOk(prow, trow, pcol, tcol, isTrue, op);               
-                    }
-                    // -
-                    else{
-                        let op = 0;
-                        return isOk(prow, trow, pcol, tcol, isTrue, op);
-                    }
-                }
-            break;
-
-            case "k":
-                if( (tcol == pcol + 1 && trow == prow + 2) || ( tcol == pcol + 1 && trow == prow - 2) || (tcol == pcol - 1 && trow == prow + 2) || (tcol == pcol - 1 && trow == prow - 2)
-                    || (trow == prow + 1 && tcol == pcol + 2) || ( trow == prow + 1 && tcol == pcol - 2) || (trow == prow - 1 && tcol == pcol + 2) || (trow == prow - 1 && tcol == pcol - 2)){
-                        let currentTile = document.getElementById("t" + trow + "-" + tcol);
-                        if( !currentTile.children[0]){
-                            return true;
-                        }
-                        // till i figure it out
-                        else{
-                            return true;
-                        }
-                    }
-
-                break;
-            
-            case "b":
-
-                let i = 1;
-                if( prow < trow && pcol < tcol){
-                    while( prow + i != trow && pcol + i != tcol && i <= 8){
-                        let currentTile = document.getElementById("t" + (prow + i) + "-" + (pcol + i));
-                        if( currentTile.children[0]){
-                            return false;
-                        }
-                        i++;
-                    }
-                    return true;
-                }
-                else if( prow < trow && pcol > tcol){
-                    while( prow + i != trow && pcol - i != tcol && i <=8){
-                        let currentTile = document.getElementById("t" + (prow + i) + "-" + (pcol - i));
-                        if( currentTile.children[0]){
-                            return false;
-                        }
-                        i++;   
-
-                    }
-                    return true;
-                }
-                else if( prow > trow && pcol < tcol){
-                    while( prow - i != trow && pcol + i != tcol && i <=8){
-                        let currentTile = document.getElementById("t" + (prow - i) + "-" + (pcol + i));
-                        if( currentTile.children[0]){
-                            return false;
-                        }
-                        i++;   
-                                
-                    }
-                    return true;
-                }
-                else{
-                    while( prow - i != trow && pcol - i != tcol && i <= 8){
-                        let currentTile = document.getElementById("t" + (prow - i) + "-" + (pcol - i));
-                        if( currentTile.children[0]){
-                            return false;
-                        }
-                        i++;
-                    }
-                    return true;
-                }
-
-                
-                
-                break;
-
-            case "K":
-                
-                break;
-            
-            case "q":
-
-                break;
-
-            case "p":
-                
-                if( prow < trow){
-                    while(prow < trow){
-                        prow++;
-                        let currentTile = document.getElementById("t" + prow + "-" + pcol);
-                        if(currentTile.children[0]){
-                            return false;
-                        }
-                    }
-                    return true;
-                    
-                }
-                else if( prow > trow){
-                    
-                    while( prow > trow){
-                        prow--;
-                        let currentTile = document.getElementById("t" + prow + "-" + pcol);
-                        if( currentTile.children[0]){
-                            return false;
-                        }
-                    }
-                    return true;
-                    
-                }
-                else{
-                    
-                    return false;
-                }
-                
-                break;
-
-            default:
-                break;
-        }   
-    }
-
-    function isOk(prow, trow, pcol, tcol, isTrue, op){
-
-        pcol == tcol ? (prow = op == 1 ? prow + 1 : prow - 1) : (pcol = op == 1 ? pcol + 1 : pcol - 1);
-            
-            while(pcol == tcol ? (op == 1 ? prow < trow : prow > trow) : (op == 1 ? pcol < tcol : pcol > tcol)){
-
-                let testTile = document.getElementById("t" + prow + "-" + pcol);
-                if(testTile.children[0]){
-                    return isTrue;
-                }
-
-                pcol == tcol ? (prow = op == 1 ? prow + 1 : prow - 1) : (pcol = op == 1 ? pcol + 1 : pcol - 1);
-            }
-            isTrue = true;
-            return isTrue;
-        
-    }
+}

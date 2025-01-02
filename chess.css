@@ -8,13 +8,28 @@ body{
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-image: url("./Assets/bg0.jpeg");
-    backdrop-filter: blur(2px);
+    /* background-color: rgb(76, 76, 76); */
+    background-image: url("./Assets/Backgoround Image/bg0.jpeg");
+    /* backdrop-filter: blur(2px); */
 
 }
 
-.board{
+.boardContainer{
+    width: 650px;
+    height: 800px;
+    border: 1px solid;
+    border-radius: 20px;
     position: relative;
+
+    /* background-color: rgb(60, 60, 60); */
+    background-color: transparent;
+    backdrop-filter: blur(20px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.board{
     display: flex;
     flex-wrap: wrap;
     width: 600px;
@@ -22,19 +37,7 @@ body{
 
     border: 3px solid black;
     border-radius: 10px;
-    transition: transform 1s ease-in-out;
 } 
-.peices{
-    transition: transform .5s ease-in-out;
-}
-
-/* .rotate180{
-    transform: rotateZ(180deg);
-}
-
-.rotate0{
-    transform: rotateZ(0deg);
-} */
 
 .chessTileContainer{
     background-color: white;
@@ -48,85 +51,135 @@ body{
 }
 
 .chessTile{
-    width: 75px;
-    height: 75px;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-#graveBlack{
-    width: 150px;
-    height: 600;
-    border: 3px solid black;
+    width: 65px;
+    height: 65px;
+    border: 3px solid transparent;
     border-radius: 5px;
-    margin: 50px;
 
     display: flex;
-    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
 }
 
-#graveWhite{
-    width: 150px;
-    height: 600;
-    border: 3px solid black;
+.peices{
+    border: 3px solid transparent;
     border-radius: 5px;
-    margin: 50px;
-
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
 }
 
-.graveBlackTile{
-    width: 75px;
-    height: 75px;
-
-    background-color: gray;
-}
-
-.graveWhiteTile{
-    width: 75px;
-    height: 75px;
-
-    background-color: white;
-}
-
-.player1{
+#player1{
     position: absolute;
-    left: 230px;
-    top: 50px;
-    background-color: rgb(11, 173, 100);
-    width: 120px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    text-align: center;
-    border-radius: 5px;
 
-    font-size: 30px;
+    right: 375px;
+    top: 715px;
+    background-color: gray;
+    width: 250px;
+    height: 60px;
+    /* border: 2px solid rgb(0, 167, 72); */
+    border: 3px solid transparent;
+    border-radius: 5px;
+    z-index: 1;
+}
+
+#player1 p{
+    position: absolute;
+    left: 70px;
+    top: 5px;
+    font-size: 17px;
     font-weight: 600;
     color: white;
 }
-.player2{
+#player2{
     position: absolute;
-    right: 230px;
-    top: 50px;
+    left: 25px;
+    top: 25px;
     background-color: gray;
-    width: 120px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    text-align: center;
+    width: 250px;
+    height: 60px;
+    border: 3px solid transparent;
     border-radius: 5px;
+}
 
-    font-size: 30px;
+#player2 p{
+    position: absolute;
+    left: 70px;
+    top: 5px;
+    font-size: 17px;
     font-weight: 600;
     color: white;
+}
+
+.iconContainer1{
+    position: relative;
+    left: 5px;
+    top: 5px;
+    width: 50px;
+    height: 50px;
+    border-radius: 5px;
+
+    background-color: rgb(177, 177, 177);
+}
+
+.iconContainer2{
+    position: relative;
+    left: 5px;
+    top: 5px;
+    width: 50px;
+    height: 50px;
+    border-radius: 5px;
+
+    background-color: rgb(177, 177, 177);
+}
+
+#grave1{
+    position: absolute;
+    left: 70px;
+    top: 33px;
+    width: 150px;
+    height: 20px;
+    border-radius: 3px;
+
+    display: flex;
+    align-items: center;
+
+    background-color: rgb(177, 177, 177);
+}
+
+#grave2{
+    position: absolute;
+    left: 70px;
+    top: 33px;
+    width: 150px;
+    height: 20px;
+    border-radius: 3px;
+
+    display: flex;
+    align-items: center;
+
+    background-color: rgb(177, 177, 177);
+}
+
+#timer1{
+    position: absolute;
+    right: 25px;
+    top: 27px;
+    width: 100px;
+    height: 60px;
+    border: .5px solid rgb(127, 127, 127);
+    border-radius: 5px;
+
+    background-color: rgba(94, 94, 94, 0.622);
+}
+
+#timer2{
+    position: absolute;
+    right: 25px;
+    bottom: 27px;
+    width: 100px;
+    height: 60px;
+    border: .5px solid rgb(127, 127, 127);
+    border-radius: 5px;
+
+    background-color: rgba(94, 94, 94, 0.622);
 }
 
 #tc1-1{
@@ -143,4 +196,5 @@ body{
 
 #tc8-8{
     border-bottom-right-radius: 7px;
+    /* color: rgb(170, 32, 32); */
 }

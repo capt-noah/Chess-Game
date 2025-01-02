@@ -6,19 +6,22 @@
     
 </head>
 <body>
-    <div class="player1" id="p1">
-        <p>Player 1</p>
+    <audio id="moveSelf" src="./Assets/Sound Effects/move_self.mp3"></audio>
+    <audio id="moveOpponent" src="./Assets/Sound Effects/move_opponent.mp3"></audio>
+    <audio id="capture" src="./Assets/Sound Effects/capture.mp3"></audio>
+
+    <div class="boardContainer">
+
+        <!-- <div id="graveWhite"></div> -->
+        <div class="board" id="board"></div>
+
+        <div id="player1" id="p1"> <div class="iconContainer1"><img src=""> </div> <p>Player1</p> <div id="grave1"></div> </div>
+        <div id="player2" id="p2"> <div class="iconContainer2"><img src=""> </div> <p>Player2</p> <div id="grave2"></div> </div>
+        <div id="timer1"></div>
+        <div id="timer2"></div>
+        <!-- <div id="graveBlack"></div> -->
     </div>
 
-    <div id="graveWhite"></div>
-
-    <div class="board" id="board"></div>
-
-    <div class="player2" id="p2">
-        <p>player 2</p>
-    </div>
-
-    <div id="graveBlack"></div>
 
     <script src="chess.js"></script>
 </body>
