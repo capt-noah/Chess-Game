@@ -4,10 +4,24 @@ const graveBlack = document.getElementById("graveBlack");
 const moveSelfSound = document.getElementById("moveSelf");
 const moveOpponentSound = document.getElementById("moveOpponent");
 const captureSound = document.getElementById("capture");
+const invalidSound = document.getElementById("invalid");
+const promotedSound = document.getElementById("promoted");
 const player1 = document.getElementById("player1");
 const player2 = document.getElementById("player2");
 const grave1 = document.getElementById("grave1");
 const grave2 = document.getElementById("grave2");
+
+const player1Minutes = document.getElementById("player1Minutes");
+const player1Seconds = document.getElementById("player1Seconds");
+const player2Minutes = document.getElementById("player2Minutes");
+const player2Seconds = document.getElementById("player2Seconds");
+
+const timer1 = document.getElementById("timer1");
+const timer2 = document.getElementById("timer2");
+
+let playerMinutes;
+let playerSeconds;
+
 let chessPieces = ["rook_white","knight_white","bishop_white","king_white","queen_white","bishop_white","knight_white","rook_white",
                     "rook_black","knight_black","bishop_black","king_black","queen_black","bishop_black","knight_black","rook_black",]
 
@@ -38,6 +52,57 @@ let markedTiles = [];
 let isPeiceSelected;
 let availableTiles = [];
 let isValid = new Map();
+
+let m = 10;
+let s = 60;
+let m1 = 10;
+let s1 = 60;
+
+
+// const timer = setInterval(check, 1000);
+
+
+function check(){
+
+    if(player == 1){
+        m = Number(player1Minutes.innerText);
+        s = Number(player1Seconds.innerText);
+
+        playerMinutes = player1Minutes;
+        playerSeconds = player1Seconds;
+    }
+    
+
+    else{
+        m = Number(player2Minutes.innerText);
+        s = Number(player2Seconds.innerText);
+
+        playerMinutes = player2Minutes;
+        playerSeconds = player2Seconds;
+        
+    }
+
+    if( m == 0 && s == 0){
+        clearInterval(timer);
+        window.alert("TIME'S UP!!")
+    }
+
+    if(s == 0 || playerSeconds.innerText == "00"){
+        s = 60;
+        s--;
+        m--;
+        
+        playerMinutes.innerText = m < 10? "0" + m : m;
+        playerSeconds.innerText = s;
+    }
+
+    else{
+        s--;
+        playerSeconds.innerText = s < 10? "0" + s : s == 0? "00" : s;
+    }
+
+
+}
 
 let pawnFirstMove = new Map();
 for( let i = 1; i <= 2; i++){
@@ -129,6 +194,8 @@ function gameStart(){
 
     // console.log(gameArray);
     // updateGame(gameArray);
+
+    player1.style.borderColor = "rgb(0, 167, 72)";
  
 }
 
@@ -145,19 +212,23 @@ function addToGrave(killedPeice, color){
 function tileHandler(e){
     if( e.tagName == "IMG"){
         if(isValid.get(e.parentElement.id)){
+
             availableTiles.push(currentPeice.parentElement);
             availableTiles.forEach(removeHighlight);
             e.parentElement.append(currentPeice);
 
             updateId(currentPeice, e.parentElement);
             addToGrave(e, e.id[1]);
+            
             if(isPromotable){
                 currentPeice = promote(currentPeice);
                 isPromotable = false;
             }
+            else
+                captureSound.play();
             board.removeEventListener('click', tileHandler);
             isPeiceSelected = false;
-            captureSound.play();
+            
 
             changePlayer();
             return;
@@ -174,6 +245,11 @@ function tileHandler(e){
         
         board.removeEventListener('click', tileHandler);
         isPeiceSelected = false;
+        if(isPromotable){
+            currentPeice = promote(currentPeice);
+            isPromotable = false;
+        }
+        board
         if(currentPeice.id[1] == "w")
             moveSelfSound.play();
         else
@@ -183,10 +259,13 @@ function tileHandler(e){
     }
 }
 
+
+
 function handler(event, img){
     event.stopPropagation();
 
-    if(isPeiceSelected && img.id[1] == currentPeice.id[1]){ 
+    if( (isPeiceSelected && img.id[1] == currentPeice.id[1]) || (isPeiceSelected && img.id[0] == "K") ){ 
+        invalidSound.play();
         isPeiceSelected = false;
         availableTiles.push(currentPeice.parentElement);
         availableTiles.forEach(removeHighlight);
@@ -230,13 +309,19 @@ function changePlayer(){
     if( player == 1){
         player = 2;
         player1.style.borderColor = "";
+        timer1.style.fill = "rgb(157, 157, 157)";
+
         player2.style.borderColor = "rgb(0, 167, 72)";
+        timer2.style.fill = "white";
 
     }
     else{
         player = 1;
         player2.style.borderColor = "";
+        timer2.style.fill = "rgb(157, 157, 157)";
+
         player1.style.borderColor = "rgb(0, 167, 72)";
+        timer1.style.fill = "white";
     }
 }
 
@@ -296,6 +381,10 @@ function availableMoves(currentPeice){
                 }
 
                 if(checkTile1.firstChild == undefined){    
+                    if((id[1] == "w" && checkTile1.id[1] == "1") || (id[1] == "b" && checkTile1.id[1] == "8")){
+                        isPromotable = true;
+                    }
+
                     availableTiles.push(checkTile1);
                     isValid.set(checkTile1.id, 1);
                 }
@@ -518,6 +607,7 @@ function promote(currentPeice){
         currentPeice.src = "./Assets/Chess Peices1/queen_black.png";
 
     }
+    promotedSound.play();
     return currentPeice;
 }
 

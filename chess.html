@@ -1,25 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Chess</title>
+    <title>Home</title>
     <link rel="stylesheet" href="chess.css">
     
 </head>
 <body>
-    <audio id="moveSelf" src="./Assets/Sound Effects/move_self.mp3"></audio>
-    <audio id="moveOpponent" src="./Assets/Sound Effects/move_opponent.mp3"></audio>
-    <audio id="capture" src="./Assets/Sound Effects/capture.mp3"></audio>
+    <audio id = "moveSelf" src="./Assets/Sound Effects/move_self.mp3"></audio>
+    <audio id = "moveOpponent" src="./Assets/Sound Effects/move_opponent.mp3"></audio>
+    <audio id = "capture" src="./Assets/Sound Effects/capture.mp3"></audio>
+    <audio id = "invalid" src="./Assets/Sound Effects/invalid_move.mp3"></audio>
+    <audio id = "promoted" src="./Assets/Sound Effects/promoted.mp3"></audio>
 
     <div class="boardContainer">
 
-        <!-- <div id="graveWhite"></div> -->
         <div class="board" id="board"></div>
 
         <div id="player1" id="p1"> <div class="iconContainer1"><img src=""> </div> <p>Player1</p> <div id="grave1"></div> </div>
         <div id="player2" id="p2"> <div class="iconContainer2"><img src=""> </div> <p>Player2</p> <div id="grave2"></div> </div>
-        <div id="timer1"></div>
-        <div id="timer2"></div>
-        <!-- <div id="graveBlack"></div> -->
+        <div id="timer1">     
+            <svg id="clock1" viewBox="-250 -200 1000 1000">
+                <path d="M464 256A208 208 0 1 1 48 256a208 208 0 1 1 416 0zM0 256a256 256 0 1 0 512 0A256 256 0 1 0 0 256zM232 120l0 136c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2 280 120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/>
+            </svg> <p id="player1Minutes">10</p> : <p id="player1Seconds">00</p> </div>
+
+        <div id="timer2">     
+            <svg id="clock2" viewBox="-250 -200 1000 1000">
+                <path d="M464 256A208 208 0 1 1 48 256a208 208 0 1 1 416 0zM0 256a256 256 0 1 0 512 0A256 256 0 1 0 0 256zM232 120l0 136c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2 280 120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/>
+            </svg> <p id="player2Minutes">10</p> : <p id="player2Seconds">00</p> </div>
+
     </div>
 
 
