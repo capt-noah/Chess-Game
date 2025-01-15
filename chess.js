@@ -59,7 +59,7 @@ let m1 = 10;
 let s1 = 60;
 
 
-// const timer = setInterval(check, 1000);
+const timer = setInterval(check, 1000);
 
 
 function check(){
